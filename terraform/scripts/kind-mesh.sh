@@ -28,6 +28,8 @@ sudo install -o root -g root -m 0755 ./kubectl /usr/bin/kubectl
 ## Clone project and create cluster
 sudo git clone https://github.com/k8s-gt/k8s-lab.git /root/kind-mesh -b day-2
 
+echo "Fire it up!" && exit 0
+
 #########################
 #   _  ___       _____
 #  | |/ (_)     |  __ \

@@ -25,16 +25,6 @@ resource "digitalocean_droplet" "server" {
   }
 }
 
-resource "null_resource" "copy" {
-  provisioner "local-exec" {
-    command = <<EOT
-      mkdir -p ~/.kube
-      rm -f ~/.kube/config-kind-mesh
-      scp  -o StrictHostKeyChecking=no root@${digitalocean_droplet.server.ipv4_address}:/root/.kube/config ~/.kube/config-kind-mesh
-    EOT
-  }
-}
-
 output "instance_ip_addr" {
   value = digitalocean_droplet.server.ipv4_address
 }

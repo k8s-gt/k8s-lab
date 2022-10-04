@@ -32,4 +32,5 @@ install -o root -g root -m 0755 kubectl /usr/local/sbin/kubectl
 ```shell
 kubectl cluster-info --context kind-kind-mesh
 kubectl get --all-namespaces all
+docker ps
 ```
