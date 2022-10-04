@@ -14,9 +14,8 @@ Create a new access token for the DigitalOcean API: <https://docs.digitalocean.c
 
 ```bash
 # Assuming you are at the repository root directory
-$ cd terraform
-$ ssh-keygen -t ed25519 -C "kind-mesh@digitalocean.com" -q -N '' -f ssh-key
-$ ls
+$ ssh-keygen -t ed25519 -C "kind-mesh@digitalocean.com" -q -N '' -f terraform/ssh-key
+$ ls ssh*
 ssh-key      ssh-key.pub
 ```
 

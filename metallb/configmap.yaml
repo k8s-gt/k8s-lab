@@ -1,3 +1,5 @@
+# MetalLB ConfigMap
+# Read more: https://metallb.universe.tf/usage/example/
 apiVersion: v1
 kind: ConfigMap
 metadata:

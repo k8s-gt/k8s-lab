@@ -29,7 +29,7 @@ resource "null_resource" "copy" {
   provisioner "local-exec" {
     command = <<EOT
       mkdir -p ~/.kube
-      rm ~/.kube/config-kind-mesh
+      rm -f ~/.kube/config-kind-mesh
       scp  -o StrictHostKeyChecking=no root@${digitalocean_droplet.server.ipv4_address}:/root/.kube/config ~/.kube/config-kind-mesh
     EOT
   }
@@ -39,17 +39,7 @@ output "instance_ip_addr" {
   value = digitalocean_droplet.server.ipv4_address
 }
 
-output "go_addr" {
+output "app_addr" {
   value = "http://${digitalocean_droplet.server.ipv4_address}:8081"
-  description = "Go application address"
-}
-
-output "js_addr" {
-  value = "http://${digitalocean_droplet.server.ipv4_address}:8082"
-  description = "JS application address"
-}
-
-output "python_addr" {
-  value = "http://${digitalocean_droplet.server.ipv4_address}:8083"
-  description = "Python application address"
+  description = "Sample application address"
 }

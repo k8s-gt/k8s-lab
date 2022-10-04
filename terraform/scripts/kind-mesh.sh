@@ -1,5 +1,15 @@
 #!/bin/bash
 
+################################
+#    _____      _
+#   / ____|    | |
+#  | (___   ___| |_ _   _ _ __
+#   \___ \ / _ \ __| | | | '_ \
+#   ____) |  __/ |_| |_| | |_) |
+#  |_____/ \___|\__|\__,_| .__/
+#                        | |
+#                        |_|
+
 ## Configure docker repository and install packages
 sudo yum install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -16,50 +26,104 @@ sudo install -o root -g root -m 0755 ./kind /usr/bin/kind
 sudo install -o root -g root -m 0755 ./kubectl /usr/bin/kubectl
 
 ## Clone project and create cluster
-sudo git clone https://github.com/adawolfs/kind-mesh.git /root/kind-mesh
-export PUBLIC_IP=$(curl ifconfig.me)
-# Public ip not working on gcp by now
+sudo git clone https://github.com/k8s-gt/k8s-lab.git /root/kind-mesh -b day-2
+
+#########################
+#   _  ___       _____
+#  | |/ (_)     |  __ \
+#  | ' / _ _ __ | |  | |
+#  |  < | | '_ \| |  | |
+#  | . \| | | | | |__| |
+#  |_|\_\_|_| |_|_____/
+
+# GCP Only - uncomment the next two lines
+# export PUBLIC_IP=$(curl ifconfig.me)
 # sudo sed -i "s/127.0.0.1/$PUBLIC_IP/g" /root/kind-mesh/kind/cluster.yaml
+
 sudo kind create cluster --config /root/kind-mesh/kind/cluster.yaml
+
+########################################
+#   __  __      _        _ _      ____
+#  |  \/  |    | |      | | |    |  _ \
+#  | \  / | ___| |_ __ _| | |    | |_) |
+#  | |\/| |/ _ \ __/ _` | | |    |  _ <
+#  | |  | |  __/ || (_| | | |____| |_) |
+#  |_|  |_|\___|\__\__,_|_|______|____/
 
 ## Implement MetalLB
 sudo kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
 sudo kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
 sudo kubectl apply -f /root/kind-mesh/metallb/configmap.yaml
 
-sudo kubectl create configmap envoy-basic-proxy-config --from-file=envoy.yaml=/root/kind-mesh/envoy/basic-proxy.yaml
-
-sudo kubectl apply -f /root/kind-mesh/envoy/go-envoy.yaml
-sudo kubectl create configmap go-envoy-code --from-file=/root/kind-mesh/servers/go/main.go
-
-sudo kubectl apply -f /root/kind-mesh/envoy/js-envoy.yaml
-sudo kubectl create configmap js-envoy-code --from-file=/root/kind-mesh/servers/js/main.js
-
-sudo kubectl apply -f /root/kind-mesh/envoy/py-envoy.yaml
-sudo kubectl create configmap py-envoy-code --from-file=/root/kind-mesh/servers/py/main.py
-
 ## Wait for MetalLB to be ready
 sleep 30
 
-## Create variables
-export KIND_INTERFACE=$(ip -o -4 route show to 172.18.0.0/16 | awk '{print $3}')
+##########################
+#   _____          _
+#  |  __ \        | |
+#  | |__) |__   __| |___
+#  |  ___/ _ \ / _` / __|
+#  | |  | (_) | (_| \__ \
+#  |_|   \___/ \__,_|___/
 
-## Expose Go on 8081
-export GO_LB_IP=$(sudo kubectl get service go-envoy -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
-sudo firewall-cmd --add-port=8081/tcp --permanent   
-sudo firewall-cmd --add-forward-port=port=8081:proto=tcp:toport=8081:toaddr=$GO_LB_IP --permanent
+cat << EOF > ~/day-2-manifest.yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: foo-app
+  labels:
+    app: http-echo
+spec:
+  containers:
+  - name: foo-app
+    image: hashicorp/http-echo:0.2.3
+    args:
+    - "-text=foo"
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: bar-app
+  labels:
+    app: http-echo
+spec:
+  containers:
+  - name: bar-app
+    image: hashicorp/http-echo:0.2.3
+    args:
+    - "-text=bar"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: echo-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: http-echo
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8081
+    targetPort: 5678
+EOF
+sudo kubectl apply -f ~/day-2-manifest.yaml
 
-## Expose JS on 8082
-export JS_LB_IP=$(sudo kubectl get service js-envoy -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
-sudo firewall-cmd --add-port=8082/tcp --permanent   
-sudo firewall-cmd --add-forward-port=port=8082:proto=tcp:toport=8081:toaddr=$JS_LB_IP --permanent
+###################################
+#   _____             _
+#  |  __ \           | |
+#  | |__) |___  _   _| |_ ___  ___
+#  |  _  // _ \| | | | __/ _ \/ __|
+#  | | \ \ (_) | |_| | ||  __/\__ \
+#  |_|  \_\___/ \__,_|\__\___||___/
 
-## Expose Py on 8083
-export PY_LB_IP=$(sudo kubectl get service py-envoy -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
-sudo firewall-cmd --add-port=8083/tcp --permanent   
-sudo firewall-cmd --add-forward-port=port=8083:proto=tcp:toport=8081:toaddr=$PY_LB_IP --permanent
+## Expose echo-service LoadBalancer on 8081
+export ECHO_LB_IP=$(sudo kubectl get service echo-service -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
+sudo firewall-cmd --add-port=8081/tcp --permanent
+sudo firewall-cmd --add-forward-port=port=8081:proto=tcp:toport=8081:toaddr=$ECHO_LB_IP --permanent
 
 ## Enable traffic on both directions
+export KIND_INTERFACE=$(ip -o -4 route show to 172.18.0.0/16 | awk '{print $3}')
 sudo firewall-cmd --direct --permanent --add-rule ipv4 filter FORWARD 0 -i eth0 -o $KIND_INTERFACE -j ACCEPT
 sudo firewall-cmd --direct --permanent --add-rule ipv4 filter FORWARD 0 -i $KIND_INTERFACE -o eth0 -j ACCEPT
 sudo firewall-cmd --reload
