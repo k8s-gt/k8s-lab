@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-test
+  namespace: example
+  labels:
+    app: app-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-test
+  template:
+    metadata:
+      labels:
+        app: app-test
+    spec:
+      containers:
+      - name: app-test
+        image: elmerreal98/demohelm101-kcd
+        envFrom:
+        - configMapRef:
+            name: configmap-test
+        - secretRef:
+            name: secret-test
+        ports:
+        - containerPort: 5000

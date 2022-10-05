@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-test
+  namespace: example
+data:
+  organizacion: "kubernetes guatemala"
+  direccion: "zona 20"
+  telefono: "12345678"
+  background: "#c5f015"
