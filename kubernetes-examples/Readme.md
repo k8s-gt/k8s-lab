@@ -31,7 +31,7 @@ export EXAMPLE_LB_IP=$(sudo kubectl get service my-service-example -o json | jq 
 sudo firewall-cmd --add-port=8088/tcp --permanent   
 sudo firewall-cmd --add-forward-port=port=8088:proto=tcp:toport=80:toaddr=$EXAMPLE_LB_IP --permanent
 sudo firewall-cmd --reload
-
+sudo firewall-cmd --list-all
 
 
 k config set-context --current --namespace=default
