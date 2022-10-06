@@ -44,6 +44,43 @@ echo "Fire it up!" && exit 0
 
 sudo kind create cluster --config /root/kind-mesh/kind/cluster.yaml
 
+####################
+# Kind Verifications
+
+# Get cluster info
+kubectl cluster-info --context kind-kind-mesh
+
+# List all the objects (mostly system one)
+kubectl get --all-namespaces all
+
+# List docker networks. You'll see the one for kind
+docker network ls
+
+# List all docker containers (AKA "kubernetes nodes")
+docker container ls
+
+# Create a pod and test it within the vm
+cat << EOF > ~/kind-prove.yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kind-prove
+spec:
+  containers:
+  - name: foo-app
+    image: hashicorp/http-echo:0.2.3
+    args:
+    - "-text=kind-prove"
+EOF
+kubectl apply -f ~/kind-prove.yaml
+
+# The following command could be run either as
+#   - background job by addin the & at the end
+#   - another process in a separte terminal
+kubectl port-forward kind-prove 8080:5678
+
+curl 127.0.0.1:8080
+
 ########################################
 #   __  __      _        _ _      ____
 #  |  \/  |    | |      | | |    |  _ \
@@ -59,6 +96,11 @@ sudo kubectl apply -f /root/kind-mesh/metallb/configmap.yaml
 
 ## Wait for MetalLB to be ready
 sleep 30
+
+####################
+# MetalLB Verifications
+#
+kubectl get -n metallb-system all
 
 ##########################
 #   _____          _
@@ -123,6 +165,7 @@ sudo kubectl apply -f ~/day-2-manifest.yaml
 export ECHO_LB_IP=$(sudo kubectl get service echo-service -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
 sudo firewall-cmd --add-port=8081/tcp --permanent
 sudo firewall-cmd --add-forward-port=port=8081:proto=tcp:toport=8081:toaddr=$ECHO_LB_IP --permanent
+sudo firewall-cmd --reload
 
 ## Enable traffic on both directions
 export KIND_INTERFACE=$(ip -o -4 route show to 172.18.0.0/16 | awk '{print $3}')
