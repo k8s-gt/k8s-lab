@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## Configure docker repository and install packages
+sudo yum update -y
 sudo yum install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin git jq firewalld
@@ -16,15 +17,14 @@ sudo install -o root -g root -m 0755 ./kind /usr/bin/kind
 sudo install -o root -g root -m 0755 ./kubectl /usr/bin/kubectl
 
 ## Clone project and create cluster
-sudo git clone https://github.com/adawolfs/kind-mesh.git /root/kind-mesh
+sudo git clone https://github.com/k8s-gt/k8s-lab.git /root/kind-mesh
 export PUBLIC_IP=$(curl ifconfig.me)
 # Public ip not working on gcp by now
-# sudo sed -i "s/127.0.0.1/$PUBLIC_IP/g" /root/kind-mesh/kind/cluster.yaml
+sudo sed -i "s/127.0.0.1/$PUBLIC_IP/g" /root/kind-mesh/kind/cluster.yaml
 sudo kind create cluster --config /root/kind-mesh/kind/cluster.yaml
 
-## Implement MetalLB
-sudo kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
-sudo kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
+# # ## Implement MetalLB
+sudo kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/config/manifests/metallb-native.yaml
 sudo kubectl apply -f /root/kind-mesh/metallb/configmap.yaml
 
 sudo kubectl create configmap envoy-basic-proxy-config --from-file=envoy.yaml=/root/kind-mesh/envoy/basic-proxy.yaml
@@ -42,7 +42,7 @@ sudo kubectl create configmap py-envoy-code --from-file=/root/kind-mesh/servers/
 sleep 30
 
 ## Create variables
-export KIND_INTERFACE=$(ip -o -4 route show to 172.18.0.0/16 | awk '{print $3}')
+export KIND_INTERFACE=$(ip -o -4 route show to 172.17.0.0/16 | awk '{print $3}')
 
 ## Expose Go on 8081
 export GO_LB_IP=$(sudo kubectl get service go-envoy -o json | jq -r '.status.loadBalancer.ingress[] | .ip')
